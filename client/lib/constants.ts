@@ -5,7 +5,7 @@
 export type Role = "DONOR" | "NGO" | "BLOOD_BANK" | "HOSPITAL" | "ADMIN";
 
 export type BloodGroup = "A_POS" | "A_NEG" | "B_POS" | "B_NEG" | "AB_POS" | "AB_NEG" | "O_POS" | "O_NEG";
-export type Component = "WHOLE_BLOOD" | "PLATELETS" | "PLASMA";
+export type Component = "WHOLE_BLOOD" | "PRBC" | "PLATELETS" | "FFP";
 export type Urgency = "CRITICAL" | "URGENT" | "NORMAL";
 export type RequestStatus = "OPEN" | "FULFILLED" | "CLOSED";
 export type ResponseStatus = "PLEDGED" | "DONATED" | "DECLINED";
@@ -27,8 +27,9 @@ export const bloodGroupLabel = (value: BloodGroup): string => groupLabelMap.get(
 
 export const COMPONENTS: Array<{ value: Component; label: string }> = [
   { value: "WHOLE_BLOOD", label: "Whole blood" },
+  { value: "PRBC", label: "Packed red cells (PRBC)" },
   { value: "PLATELETS", label: "Platelets" },
-  { value: "PLASMA", label: "Plasma" },
+  { value: "FFP", label: "Plasma (FFP)" },
 ];
 export const componentLabel = (value: Component): string =>
   COMPONENTS.find((c) => c.value === value)?.label ?? value;
@@ -141,6 +142,7 @@ export interface ApiHospitalRef {
   orgName: string;
   city: string | null;
   contactPerson: string | null;
+  district?: string | null;
 }
 
 export interface ApiRequest {
@@ -195,6 +197,9 @@ export interface ApiCamp {
   title: string;
   venue: string;
   city: string;
+  districtId?: string | null;
+  districtName?: string | null;
+  orgDistrict?: string | null;
   pincode: string;
   date: string;
   startTime: string;
@@ -205,7 +210,11 @@ export interface ApiCamp {
     id: string;
     name: string;
     city: string | null;
-    orgProfile: { orgName: string; contactPerson: string } | null;
+    orgProfile: {
+      orgName: string;
+      contactPerson: string;
+      districtName?: string | null;
+    } | null;
   } | null;
 }
 
@@ -292,4 +301,40 @@ export interface ApiDonorsResponse {
 
 export interface ApiDonorMeResponse {
   profile: ApiDonorProfile & { eligible: boolean; eligibleFrom: string | null };
+}
+
+/* --------------------------- Location / availability --------------------------- */
+
+export interface ApiDistrict {
+  id: string;
+  state: string;
+  name: string;
+}
+
+export interface ApiDistrictsResponse {
+  districts: ApiDistrict[];
+  total: number;
+}
+
+export interface ApiAvailabilityResult {
+  id: string;
+  orgId: string;
+  orgName: string;
+  orgRole: Role;
+  isVerified: boolean;
+  district: string | null;
+  districtState: string | null;
+  address: string | null;
+  contactPerson: string | null;
+  bloodGroup: BloodGroup;
+  component: Component;
+  units: number;
+  updatedAt: string;
+}
+
+export interface ApiAvailabilityResponse {
+  results: ApiAvailabilityResult[];
+  total: number;
+  filters: { districtId: string | null; bloodGroup: string | null; component: string | null };
+  note: string;
 }

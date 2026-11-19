@@ -13,7 +13,7 @@ import { Field, Input, Select, Textarea } from "@/components/ui/forms";
 const requestSchema = z.object({
   patientName: z.string().trim().min(2, "Patient name is required"),
   bloodGroup: z.enum(["A_POS", "A_NEG", "B_POS", "B_NEG", "AB_POS", "AB_NEG", "O_POS", "O_NEG"]),
-  component: z.enum(["WHOLE_BLOOD", "PLATELETS", "PLASMA"]),
+  component: z.enum(["WHOLE_BLOOD", "PRBC", "PLATELETS", "FFP"]),
   units: z.coerce.number().int().min(1, "At least 1 unit").max(20, "Max 20 units"),
   urgency: z.enum(["CRITICAL", "URGENT", "NORMAL"]),
   neededBy: z.string().min(1, "Deadline is required"),

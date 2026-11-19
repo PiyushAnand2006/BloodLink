@@ -4,7 +4,7 @@ import { useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import { BLOOD_GROUPS, bloodGroupLabel, type ApiCamp } from "@/lib/constants";
 import { dateInputValue, fmtDate } from "@/lib/format";
-import { useCamps } from "@/hooks/useApiData";
+import { useCamps, useDistricts } from "@/hooks/useApiData";
 import { ProtectedShell } from "@/components/ProtectedShell";
 import { Button } from "@/components/ui/Button";
 import { Card, CardBody, EmptyState } from "@/components/ui/Card";
@@ -18,6 +18,7 @@ interface CampFormValues {
   title: string;
   venue: string;
   city: string;
+  districtId: string;
   pincode: string;
   date: string;
   startTime: string;
@@ -30,6 +31,7 @@ const emptyCamp: CampFormValues = {
   title: "",
   venue: "",
   city: "",
+  districtId: "",
   pincode: "",
   date: dateInputValue(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)),
   startTime: "09:00",
@@ -53,6 +55,7 @@ function CampsInner() {
         title: values.title.trim(),
         venue: values.venue.trim(),
         city: values.city.trim(),
+        districtId: values.districtId || null,
         pincode: values.pincode.trim(),
         date: values.date,
         startTime: values.startTime,
@@ -129,7 +132,8 @@ function CampsInner() {
                     <p className="mt-1.5 font-semibold text-navy">{camp.title}</p>
                     <p className="mt-1 flex items-start gap-1 text-xs text-muted">
                       <MapPinIcon className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                      {camp.venue}, {camp.city} — {camp.pincode}
+                      {camp.venue}, {camp.city}
+                      {camp.districtName ? ` — ${camp.districtName} district` : ""} — {camp.pincode}
                     </p>
                     <div className="mt-2 flex flex-wrap gap-1">
                       {camp.bloodGroupsNeeded.map((g) => (
@@ -179,6 +183,7 @@ function CampModal({
   onClose: () => void;
   onSave: (values: CampFormValues, id?: string) => Promise<void>;
 }) {
+  const { data: districtsData } = useDistricts();
   const [values, setValues] = useState<CampFormValues>(emptyCamp);
   const [validation, setValidation] = useState<string | null>(null);
   const [syncedFor, setSyncedFor] = useState<string | null>(null);
@@ -189,6 +194,7 @@ function CampModal({
       title: existing.title,
       venue: existing.venue,
       city: existing.city,
+      districtId: existing.districtId ?? "",
       pincode: existing.pincode,
       date: dateInputValue(new Date(existing.date)),
       startTime: existing.startTime,
@@ -219,6 +225,10 @@ function CampModal({
             setValidation("Select at least one blood group needed.");
             return;
           }
+          if (!values.districtId) {
+            setValidation("Select the camp's district.");
+            return;
+          }
           void onSave(values, existing?.id);
         }}
       >
@@ -235,6 +245,26 @@ function CampModal({
             value={values.venue}
             onChange={(e) => setValues((v) => ({ ...v, venue: e.target.value }))}
           />
+        </Field>
+        <Field
+          label="District"
+          required
+          htmlFor="c-district"
+          hint="Karnataka's 31 districts — camps outside them stay unlisted by district"
+        >
+          <select
+            id="c-district"
+            className="w-full rounded border border-line bg-white px-3 py-2 text-sm focus:border-navy focus:outline-none focus:ring-2 focus:ring-navy/20"
+            value={values.districtId}
+            onChange={(e) => setValues((v) => ({ ...v, districtId: e.target.value }))}
+          >
+            <option value="">Select district…</option>
+            {(districtsData?.districts ?? []).map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.name}
+              </option>
+            ))}
+          </select>
         </Field>
         <div className="grid gap-4 sm:grid-cols-3">
           <Field label="City" required htmlFor="c-city">

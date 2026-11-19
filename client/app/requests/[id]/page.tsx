@@ -72,8 +72,9 @@ function RequestDetail({ id }: { id: string }) {
           </p>
           <p className="flex items-center gap-2 text-muted">
             <MapPinIcon className="h-4 w-4" />
+            {request.hospital.district ? `${request.hospital.district} district — ` : ""}
             {request.city}
-            {request.pincode ? ` — ${request.pincode}` : ""}
+            {request.pincode ? ` · ${request.pincode}` : ""}
           </p>
           {request.hospitalPhone ? (
             <p className="flex items-center gap-2 font-semibold text-success">

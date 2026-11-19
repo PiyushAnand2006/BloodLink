@@ -3,8 +3,10 @@
 import useSWR, { SWRConfiguration } from "swr";
 import { fetcher, qs } from "@/lib/api";
 import type {
+  ApiAvailabilityResponse,
   ApiCampsResponse,
   ApiDashboardResponse,
+  ApiDistrictsResponse,
   ApiDonorMeResponse,
   ApiDonorsResponse,
   ApiMyResponsesResponse,
@@ -47,7 +49,7 @@ export function useMyResponses() {
   return useSWR<ApiMyResponsesResponse>("/responses/mine", fetcher);
 }
 
-export function useCamps(params: { city?: string; mine?: boolean }) {
+export function useCamps(params: { city?: string; districtId?: string; mine?: boolean }) {
   return useSWR<ApiCampsResponse>(
     `/camps${qs({ ...params, mine: params.mine ? "true" : undefined })}`,
     fetcher,
@@ -65,4 +67,19 @@ export function useDonorMe() {
 export function useDonorSearch(params: { bloodGroup?: string; city?: string; pincode?: string; rareOnly?: boolean }, config?: SWRConfiguration) {
   const key = `/donors${qs({ ...params, rareOnly: params.rareOnly ? "true" : undefined })}`;
   return useSWR<ApiDonorsResponse>(key, fetcher, config);
+}
+
+/** Karnataka district master — one source for every district dropdown. */
+export function useDistricts() {
+  return useSWR<ApiDistrictsResponse>("/districts", fetcher, {
+    revalidateIfStale: false,
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+    refreshInterval: 0,
+  });
+}
+
+/** Blood-stock search — filters applied in the database. */
+export function useAvailability(params: { districtId?: string; bloodGroup?: string; component?: string }) {
+  return useSWR<ApiAvailabilityResponse>(`/availability${qs(params)}`, fetcher);
 }

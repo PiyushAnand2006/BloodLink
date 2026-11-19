@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useCamps } from "@/hooks/useApiData";
+import { useCamps, useDistricts } from "@/hooks/useApiData";
 import { useMe } from "@/hooks/useMe";
 import { bloodGroupLabel } from "@/lib/constants";
 import { fmtDate } from "@/lib/format";
@@ -13,7 +13,9 @@ import { CalendarIcon, MapPinIcon, ClockIcon } from "@/components/ui/icons";
 
 export default function CampsPage() {
   const [city, setCity] = useState("");
-  const { data } = useCamps({ city });
+  const [districtId, setDistrictId] = useState("");
+  const { data } = useCamps({ city, districtId: districtId || undefined });
+  const { data: districtsData } = useDistricts();
   const { user } = useMe();
 
   const today = new Date().setHours(0, 0, 0, 0);
@@ -25,7 +27,7 @@ export default function CampsPage() {
     <div className="py-2">
       <PageHeader
         title="Donation camps"
-        subtitle="Blood donation camps organised by NGOs across cities."
+        subtitle="Blood donation camps organised by NGOs across Karnataka's districts."
         actions={
           user?.role === "NGO" ? (
             <a href="/org/camps" className="text-sm font-semibold text-primary hover:underline">
@@ -35,7 +37,25 @@ export default function CampsPage() {
         }
       />
 
-      <div className="mb-5 flex items-end gap-3 rounded-lg border border-line bg-surface p-4 shadow-card">
+      <div className="mb-5 flex flex-wrap items-end gap-3 rounded-lg border border-line bg-surface p-4 shadow-card">
+        <div className="w-56">
+          <label htmlFor="camps-district" className="mb-1 block text-xs font-semibold text-navy">
+            District
+          </label>
+          <select
+            id="camps-district"
+            className="w-full rounded border border-line bg-white px-3 py-2 text-sm focus:border-navy focus:outline-none focus:ring-2 focus:ring-navy/20"
+            value={districtId}
+            onChange={(e) => setDistrictId(e.target.value)}
+          >
+            <option value="">All Districts</option>
+            {(districtsData?.districts ?? []).map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.name}
+              </option>
+            ))}
+          </select>
+        </div>
         <div className="w-56">
           <label htmlFor="camps-city" className="mb-1 block text-xs font-semibold text-navy">
             City
@@ -107,7 +127,8 @@ function CampCard({ camp, past = false }: { camp: NonNullable<ReturnType<typeof 
       <p className="mt-1.5 font-semibold text-navy">{camp.title}</p>
       <p className="mt-1 flex items-start gap-1 text-xs text-muted">
         <MapPinIcon className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-        {camp.venue}, {camp.city} — {camp.pincode}
+        {camp.venue}, {camp.city}
+        {camp.districtName ? ` — ${camp.districtName} district` : ""} — {camp.pincode}
       </p>
       <p className="mt-1 flex items-center gap-1 text-xs text-muted">
         <ClockIcon className="h-3.5 w-3.5" />

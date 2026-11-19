@@ -34,7 +34,14 @@ function DashboardInner() {
       <PageHeader
         title="Live blood availability"
         subtitle="Donors available + stock units per blood group, refreshed every 20 seconds."
-        actions={<TimeAgo iso={data?.updatedAt ?? null} />}
+        actions={
+          <div className="flex items-center gap-3">
+            <TimeAgo iso={data?.updatedAt ?? null} />
+            <Link href="/availability" className="text-sm font-semibold text-info hover:underline">
+              Search by district →
+            </Link>
+          </div>
+        }
       />
 
       <div className="space-y-6">

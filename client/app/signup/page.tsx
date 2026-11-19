@@ -8,6 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { api, ApiError } from "@/lib/api";
 import { roleHome, ROLE_META, GENDERS, BLOOD_GROUPS, type Role } from "@/lib/constants";
+import { useDistricts } from "@/hooks/useApiData";
 import { useMe } from "@/hooks/useMe";
 import { gsiClientId, renderGoogleButton } from "@/lib/googleAuth";
 import { Button, PageSpinner } from "@/components/ui/Button";
@@ -50,6 +51,7 @@ const buildSchema = (hasGoogle: boolean) =>
       regNo: z.string().optional(),
       address: z.string().optional(),
       contactPerson: z.string().optional(),
+      districtId: z.string().optional(),
     })
     .superRefine((v, ctx) => {
       const issue = (path: string, message: string) =>
@@ -72,14 +74,15 @@ const buildSchema = (hasGoogle: boolean) =>
           }
         }
         if (!v.gender) issue("gender", "Gender is required");
-      } else {
-        if (!v.orgName || v.orgName.trim().length < 2) issue("orgName", "Organisation name is required");
-        if (!v.regNo || v.regNo.trim().length < 2) issue("regNo", "Registration number is required");
-        if (!v.address || v.address.trim().length < 4) issue("address", "Address is required");
-        if (!v.contactPerson || v.contactPerson.trim().length < 2)
-          issue("contactPerson", "Contact person is required");
-      }
-    });
+    } else {
+      if (!v.orgName || v.orgName.trim().length < 2) issue("orgName", "Organisation name is required");
+      if (!v.regNo || v.regNo.trim().length < 2) issue("regNo", "Registration number is required");
+      if (!v.address || v.address.trim().length < 4) issue("address", "Address is required");
+      if (!v.contactPerson || v.contactPerson.trim().length < 2)
+        issue("contactPerson", "Contact person is required");
+      if (!v.districtId) issue("districtId", "District is required");
+    }
+  });
 
 type FormValues = z.infer<ReturnType<typeof buildSchema>>;
 
@@ -123,6 +126,7 @@ function SignupInner() {
   });
 
   const role = watch("role");
+  const { data: districtsData } = useDistricts();
 
   // Already signed in with a role → straight to the workspace.
   useEffect(() => {
@@ -177,6 +181,7 @@ function SignupInner() {
               regNo: rest.regNo!,
               address: rest.address!,
               contactPerson: rest.contactPerson!,
+              districtId: rest.districtId!,
             };
 
       if (cred) {
@@ -375,6 +380,22 @@ function SignupInner() {
                     </Field>
                     <Field label="Contact person" error={errors.contactPerson} required htmlFor="su-contact">
                       <Input id="su-contact" {...register("contactPerson")} />
+                    </Field>
+                    <Field
+                      label="District"
+                      error={errors.districtId}
+                      required
+                      htmlFor="su-district"
+                      hint="Karnataka's 31 districts — shown on your public listings"
+                    >
+                      <Select id="su-district" {...register("districtId")}>
+                        <option value="">Select district…</option>
+                        {(districtsData?.districts ?? []).map((d) => (
+                          <option key={d.id} value={d.id}>
+                            {d.name}
+                          </option>
+                        ))}
+                      </Select>
                     </Field>
                   </fieldset>
                 )}

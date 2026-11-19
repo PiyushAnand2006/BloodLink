@@ -83,6 +83,7 @@ interface NavItem {
 function navFor(role: Role | null): NavItem[] {
   const items: NavItem[] = [
     { href: "/dashboard", label: "Live Dashboard", icon: <DropIcon className="h-4 w-4" /> },
+    { href: "/availability", label: "Blood Availability", icon: <SearchIcon className="h-4 w-4" /> },
     { href: "/requests", label: "Emergency Requests", icon: <SearchIcon className="h-4 w-4" /> },
     { href: "/camps", label: "Donation Camps", icon: <CalendarIcon className="h-4 w-4" /> },
   ];
