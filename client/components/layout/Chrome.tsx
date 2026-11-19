@@ -112,20 +112,17 @@ function initials(name: string): string {
     .join("");
 }
 
-/** Short pause so login/logout transitions register without feeling like buffering. */
+/** Short pause after a successful sign-in so the transition doesn't snap. */
 const REDIRECT_DELAY_MS = 300;
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 export function AppHeader() {
   const { user, refresh } = useMe();
   const router = useRouter();
-  const [loggingOut, setLoggingOut] = useState(false);
 
   const logout = async () => {
-    setLoggingOut(true);
-    // A short beat with the button in its loading state — an instant
-    // sign-out reads as if the click did nothing.
-    await wait(REDIRECT_DELAY_MS);
+    // No spinner / artificial pause here — a held loading state on Logout
+    // reads as buffering. The API round-trip itself is fast enough.
     await api("/auth/logout", { method: "POST" }).catch(() => undefined);
     // Clear the cached session (revalidation now returns 401) BEFORE
     // navigating — otherwise pages still see the stale signed-in user and
@@ -167,13 +164,7 @@ export function AppHeader() {
                   </span>
                 </span>
               </Link>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={logout}
-                loading={loggingOut}
-                aria-label="Log out"
-              >
+              <Button variant="secondary" size="sm" onClick={logout} aria-label="Log out">
                 <LogoutIcon className="h-4 w-4" />
                 Logout
               </Button>
@@ -244,10 +235,14 @@ export function MainNav() {
             </Link>
           );
         })}
-        <span className="ml-auto hidden items-center gap-1 pl-6 text-right text-2xs font-semibold text-white/80 xl:flex">
-          <ClockIcon className="h-3 w-3 shrink-0" />
-          Every pledge is screened by the receiving hospital or blood bank
-        </span>
+        {/* Trust tagline — only for guests: signed-in navs are too long for it
+            and it collapses into a tall wrapped block (seen as "collision"). */}
+        {!role && (
+          <span className="ml-auto hidden items-center gap-1 whitespace-nowrap pl-6 text-2xs font-semibold text-white/80 xl:flex">
+            <ClockIcon className="h-3 w-3 shrink-0" />
+            Every pledge is screened by the receiving hospital or blood bank
+          </span>
+        )}
       </div>
     </nav>
   );
