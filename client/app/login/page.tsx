@@ -7,16 +7,26 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { api, ApiError } from "@/lib/api";
-import { roleHome, type ApiUser } from "@/lib/constants";
+import { roleHome, ROLE_META, type ApiUser, type Role } from "@/lib/constants";
 import { useMe } from "@/hooks/useMe";
 import { gsiClientId, renderGoogleButton } from "@/lib/googleAuth";
 import { Button, PageSpinner } from "@/components/ui/Button";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { Field, Input } from "@/components/ui/forms";
 import { Logo } from "@/components/ui/Logo";
-import { AlertTriangleIcon, InfoIcon } from "@/components/ui/icons";
+import { AlertTriangleIcon, InfoIcon, PersonIcon } from "@/components/ui/icons";
 
 const PENDING_CREDENTIAL_KEY = "bl.pendingGoogleCredential";
+
+/** Seeded demo accounts for the dev quick-login panel (server must be in development mode). */
+const DEMO_ACCOUNTS: Array<{ email: string; label: string; role: Role }> = [
+  { email: "ananya.sharma@bloodlink.test", label: "Ananya Sharma", role: "DONOR" },
+  { email: "apollo.bengaluru@bloodlink.test", label: "Apollo Hospitals", role: "HOSPITAL" },
+  { email: "rakta.life@bloodlink.test", label: "Rakta Life Foundation", role: "NGO" },
+  { email: "redcross.bengaluru@bloodlink.test", label: "Red Cross Blood Centre", role: "BLOOD_BANK" },
+  { email: "jeevandhara.hyderabad@bloodlink.test", label: "Jeevan Dhara Trust (unverified)", role: "NGO" },
+  { email: "admin@bloodlink.test", label: "Admin", role: "ADMIN" },
+];
 
 const loginSchema = z.object({
   email: z.string().trim().email("Enter a valid email"),
@@ -36,8 +46,10 @@ function LoginInner() {
   const [noAccount, setNoAccount] = useState(false); // 404 → invite to /signup
   const [useGoogle, setUseGoogle] = useState(false); // 409 → account is Google-only
   const [submitting, setSubmitting] = useState(false);
+  const [busyEmail, setBusyEmail] = useState<string | null>(null);
 
   const googleConfigured = gsiClientId() !== null;
+  const devPanel = process.env.NEXT_PUBLIC_DEV_LOGIN === "true";
 
   const {
     register,
@@ -110,6 +122,21 @@ function LoginInner() {
     }
   });
 
+  const devLogin = async (email: string) => {
+    setBusyEmail(email);
+    setError(null);
+    setNoAccount(false);
+    setUseGoogle(false);
+    try {
+      await api<{ user: ApiUser }>("/auth/dev", { method: "POST", body: { email } });
+      await refresh();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Demo login failed");
+    } finally {
+      setBusyEmail(null);
+    }
+  };
+
   if (user !== null && user !== undefined && !isValidating) return <PageSpinner />;
 
   return (
@@ -125,6 +152,35 @@ function LoginInner() {
           </div>
         </CardHeader>
         <CardBody className="space-y-5">
+          {devPanel && (
+            <div className="rounded-lg border border-line bg-subtle p-3">
+              <p className="text-xs font-bold uppercase tracking-widest text-muted">
+                Demo accounts (dev only)
+              </p>
+              <ul className="mt-2 grid gap-1.5">
+                {DEMO_ACCOUNTS.map((acc) => (
+                  <li key={acc.email}>
+                    <button
+                      type="button"
+                      onClick={() => devLogin(acc.email)}
+                      disabled={busyEmail !== null}
+                      className="flex w-full items-center gap-2 rounded border border-line bg-white px-2.5 py-1.5 text-left text-xs hover:border-navy disabled:opacity-50"
+                    >
+                      <PersonIcon className="h-3.5 w-3.5 shrink-0 text-muted" />
+                      <span className="min-w-0">
+                        <span className="block truncate font-semibold text-navy">{acc.label}</span>
+                        <span className="block text-2xs text-muted">{ROLE_META[acc.role].label}</span>
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-2 text-2xs text-muted">
+                One-click sign-in for seeded demo accounts (real accounts use the form below or
+                Google).
+              </p>
+            </div>
+          )}
           {noAccount && (
             <div
               className="flex items-start gap-3 rounded-lg border border-[#F5E6B8] bg-[#FFF7E0] px-4 py-3"

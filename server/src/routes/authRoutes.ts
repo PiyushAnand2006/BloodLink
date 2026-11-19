@@ -2,6 +2,7 @@ import { Router } from "express";
 import { requireAuth, validateBody } from "../middleware/auth.js";
 import { authLimiter } from "../middleware/rateLimiter.js";
 import {
+  devLogin,
   googleLogin,
   login,
   logout,
@@ -17,6 +18,7 @@ router.post("/google", authLimiter, validateBody(googleLoginSchema), googleLogin
 router.post("/register", authLimiter, register); // Google sign-up (controller parses credential + profile)
 router.post("/register-email", authLimiter, registerEmail); // email + password sign-up
 router.post("/login", authLimiter, login); // email + password sign-in
+router.post("/dev", authLimiter, devLogin); // dev-only demo quick login; guarded in the controller
 router.post("/logout", logout);
 router.get("/me", requireAuth, me);
 

@@ -2,7 +2,7 @@ import { OAuth2Client } from "google-auth-library";
 import bcrypt from "bcryptjs";
 import type { Request, Response } from "express";
 import { prisma } from "../prisma.js";
-import { config, GOOGLE_CLIENT_ID_CONFIGURED } from "../config.js";
+import { config, GOOGLE_CLIENT_ID_CONFIGURED, isDev } from "../config.js";
 import { cookieOptions, COOKIE_NAME, clearedCookieOptions } from "../utils/cookies.js";
 import { signToken } from "../utils/jwt.js";
 import { publicUser } from "../utils/sanitize.js";
@@ -12,6 +12,7 @@ import {
   loginSchema,
   onboardingSchema,
   signupEmailSchema,
+  devLoginSchema,
 } from "../validators/index.js";
 
 const googleClient = new OAuth2Client(config.GOOGLE_CLIENT_ID);
@@ -247,4 +248,26 @@ export async function me(req: Request, res: Response): Promise<void> {
 export async function logout(_req: Request, res: Response): Promise<void> {
   res.cookie(COOKIE_NAME, "", clearedCookieOptions);
   res.json({ success: true });
+}
+
+/**
+ * POST /auth/dev — DEVELOPMENT ONLY.
+ * One-click login for the seeded demo accounts shown in the login page's
+ * dev panel. Logs in an EXISTING account by email only (no account is
+ * created, and it never runs in production).
+ */
+export async function devLogin(req: Request, res: Response): Promise<void> {
+  if (!isDev) {
+    throw new ApiError(404, "Not found");
+  }
+  const { email } = devLoginSchema.parse(req.body);
+
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) {
+    throw new ApiError(404, "No demo account with this email — run npm run db:seed");
+  }
+
+  const token = signToken(user.id);
+  res.cookie(COOKIE_NAME, token, cookieOptions);
+  res.json({ user: publicUser(user) });
 }

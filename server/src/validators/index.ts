@@ -44,6 +44,11 @@ export const googleLoginSchema = z.object({
   credential: z.string().min(20, "Missing Google ID token"),
 });
 
+/** Dev-only quick login for seeded demo accounts (see authController.devLogin). */
+export const devLoginSchema = z.object({
+  email: z.string().trim().toLowerCase().email("Enter a valid email"),
+});
+
 export const passwordSchema = z
   .string()
   .min(8, "Password must be at least 8 characters")
