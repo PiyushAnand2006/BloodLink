@@ -112,13 +112,16 @@ function initials(name: string): string {
 }
 
 export function AppHeader() {
-  const { user } = useMe();
+  const { user, refresh } = useMe();
   const router = useRouter();
 
   const logout = async () => {
     await api("/auth/logout", { method: "POST" }).catch(() => undefined);
+    // Clear the cached session (revalidation now returns 401) BEFORE
+    // navigating — otherwise pages still see the stale signed-in user and
+    // bounce the freshly-logged-out visitor back to the dashboard.
+    await refresh().catch(() => undefined);
     router.replace("/");
-    router.refresh();
   };
 
   return (
@@ -200,7 +203,11 @@ export function MainNav() {
   const { user } = useMe();
   const pathname = usePathname();
   const role = user?.role ?? null;
-  const items: NavItem[] = [{ href: "/", label: "Home", icon: <DropIcon className="h-4 w-4" /> }, ...navFor(role)];
+  // Guests see "Home"; signed-in members start at the dashboard instead.
+  const items: NavItem[] = [
+    ...(role ? [] : [{ href: "/", label: "Home", icon: <DropIcon className="h-4 w-4" /> }]),
+    ...navFor(role),
+  ];
 
   return (
     <nav className="hidden bg-maroon lg:block" aria-label="Primary">

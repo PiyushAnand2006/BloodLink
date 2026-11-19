@@ -11,7 +11,8 @@ export interface MeState {
   /** True while a (re)validation is in flight — stale cache may still be shown. */
   isValidating: boolean;
   unauthorized: boolean;
-  refresh: () => void;
+  /** Revalidates /auth/me and resolves when the session state is fresh. */
+  refresh: () => Promise<unknown>;
 }
 
 export function useMe(): MeState {
@@ -25,6 +26,6 @@ export function useMe(): MeState {
     isLoading: isLoading && !unauthorized,
     isValidating,
     unauthorized,
-    refresh: () => void mutate(),
+    refresh: () => mutate(),
   };
 }

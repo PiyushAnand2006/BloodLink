@@ -1,11 +1,15 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
-import { useCamps, useDashboard, useRequests } from "@/hooks/useApiData";
+import { useRouter } from "next/navigation";
+import { useCamps, useRequests } from "@/hooks/useApiData";
+import { useMe } from "@/hooks/useMe";
 import { HeroCarousel } from "@/components/home/HeroCarousel";
 import { HomeQuickLinks } from "@/components/home/HomeQuickLinks";
 import { HealthTips } from "@/components/home/HealthTips";
 import { Card, CardBody } from "@/components/ui/Card";
+import { PageSpinner } from "@/components/ui/Button";
 import {
   BoxIcon,
   CalendarIcon,
@@ -88,32 +92,55 @@ const ROLE_FEATURES = [
 
 export default function LandingPage() {
   const { data: camps } = useCamps({});
+  const { user, isValidating } = useMe();
+  const router = useRouter();
+
+  // Signed-in members go straight to the dashboard — the marketing home page
+  // is only for guests (settled session check, never a stale-cache redirect).
+  const signedIn = user !== null && user !== undefined;
+
+  useEffect(() => {
+    if (isValidating) return;
+    if (signedIn) router.replace("/dashboard");
+  }, [signedIn, isValidating, router]);
+
+  if (signedIn) return <PageSpinner />;
 
   return (
     <div className="space-y-12 py-2">
       {/* Hero carousel — what the platform is */}
       <HeroCarousel />
 
-      {/* Quick links */}
-      <HomeQuickLinks />
-
-      {/* How it works */}
-      <section aria-labelledby="how-it-works">
-        <SectionTitle id="how-it-works">How BloodLink works</SectionTitle>
-        <div className="grid gap-4 md:grid-cols-3">
+      {/* How it works — crimson band */}
+      <section
+        aria-labelledby="how-it-works"
+        className="relative rounded-lg bg-primary px-6 py-12 text-white"
+      >
+        <div className="text-center">
+          <h2 id="how-it-works" className="text-2xl font-semibold text-white">
+            How BloodLink works
+          </h2>
+          <DropIcon className="mx-auto mt-2 h-4 w-4 text-white/70" aria-hidden />
+        </div>
+        <div className="relative mx-auto mt-8 grid max-w-5xl gap-8 sm:grid-cols-3 sm:gap-6">
+          <span
+            aria-hidden
+            className="absolute left-[16%] right-[16%] top-8 hidden border-t-2 border-dashed border-white/30 sm:block"
+          />
           {HOW_IT_WORKS.map((step) => (
-            <Card key={step.title}>
-              <CardBody>
-                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-50 text-primary">
-                  {step.icon}
-                </span>
-                <h3 className="mt-3 font-semibold text-navy">{step.title}</h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-muted">{step.text}</p>
-              </CardBody>
-            </Card>
+            <div key={step.title} className="relative flex flex-col items-center text-center">
+              <span className="z-10 flex h-16 w-16 items-center justify-center rounded-full bg-white text-primary shadow-pop">
+                {step.icon}
+              </span>
+              <h3 className="mt-3 font-semibold text-white">{step.title}</h3>
+              <p className="mt-1.5 text-xs leading-relaxed text-white/80">{step.text}</p>
+            </div>
           ))}
         </div>
       </section>
+
+      {/* Quick links */}
+      <HomeQuickLinks />
 
       {/* Features per role */}
       <section aria-labelledby="role-features">

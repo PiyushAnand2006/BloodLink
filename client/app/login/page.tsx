@@ -78,6 +78,7 @@ function LoginInner() {
       try {
         await api<{ user: ApiUser }>("/auth/google", { method: "POST", body: { credential } });
         await refresh();
+        router.replace(next || roleHome(undefined));
       } catch (e) {
         if (e instanceof ApiError && e.status === 404) {
           // Verified with Google but not registered → park the credential so the
@@ -106,7 +107,9 @@ function LoginInner() {
         method: "POST",
         body: { email: values.email.trim().toLowerCase(), password: values.password },
       });
+      // Navigate as soon as the session cache is refreshed — no extra render cycle.
       await refresh();
+      router.replace(next || roleHome(undefined));
     } catch (e) {
       if (e instanceof ApiError && e.status === 404) {
         setError("No account exists with this email. Please create an account first.");
@@ -130,6 +133,7 @@ function LoginInner() {
     try {
       await api<{ user: ApiUser }>("/auth/dev", { method: "POST", body: { email } });
       await refresh();
+      router.replace("/dashboard");
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Demo login failed");
     } finally {
