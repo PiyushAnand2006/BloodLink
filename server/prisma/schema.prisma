@@ -1,0 +1,189 @@
+// BloodLink — Prisma schema (PostgreSQL).
+// Enums map 1:1 to the API contract; see README (phase 8) for details.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  DONOR
+  NGO
+  BLOOD_BANK
+  HOSPITAL
+  ADMIN // seeded account only — never offered during onboarding
+}
+
+enum BloodGroup {
+  A_POS
+  A_NEG
+  B_POS
+  B_NEG
+  AB_POS
+  AB_NEG
+  O_POS
+  O_NEG
+}
+
+enum Component {
+  WHOLE_BLOOD
+  PLATELETS
+  PLASMA
+}
+
+enum Urgency {
+  CRITICAL
+  URGENT
+  NORMAL
+}
+
+enum RequestStatus {
+  OPEN
+  FULFILLED
+  CLOSED
+}
+
+enum ResponseStatus {
+  PLEDGED
+  DONATED
+  DECLINED
+}
+
+// Central identity table. `role` stays null until the user completes
+// one-time onboarding (ADMIN accounts are seeded, never onboarded).
+model User {
+  id           String   @id @default(cuid())
+  // Identity: googleId for Google-verified accounts (null for email+password
+  // accounts); passwordHash is a bcrypt hash (null for Google-only accounts).
+  googleId     String?  @unique
+  passwordHash String?
+  email        String   @unique
+  name         String
+  avatarUrl    String?
+  role         Role?
+  // Nullable until registration completes; API validation enforces them
+  // (10-digit Indian mobile etc.) for every role once onboarded.
+  phone        String?
+  city         String?
+  state        String?
+  pincode      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  donorProfile  DonorProfile?
+  orgProfile    OrgProfile?
+  stocks        Stock[]
+  camps         Camp[]
+  bloodRequests BloodRequest[]   @relation("HospitalRequests")
+  responses     RequestResponse[]
+
+  @@index([city])
+  @@index([role])
+}
+
+// One-to-one extension for DONOR users.
+model DonorProfile {
+  userId        String     @id
+  bloodGroup    BloodGroup
+  dateOfBirth   DateTime
+  gender        String
+  isAvailable   Boolean    @default(true)
+  isRare        Boolean    @default(false)
+  lastDonatedOn DateTime? // null => eligible; otherwise eligible after 90 days
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([bloodGroup, isAvailable])
+  @@index([isRare])
+}
+
+// One-to-one extension for NGO, BLOOD_BANK and HOSPITAL users.
+model OrgProfile {
+  userId        String  @id
+  orgName       String
+  regNo         String
+  address       String
+  contactPerson String
+  isVerified    Boolean @default(false) // admin can flip via PATCH /admin/orgs/:userId/verify
+  user          User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Live stock rows held by NGO and BLOOD_BANK organisations.
+model Stock {
+  id         String    @id @default(cuid())
+  orgId      String
+  bloodGroup BloodGroup
+  component  Component
+  units      Int
+  updatedAt  DateTime  @updatedAt
+
+  org User @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, bloodGroup, component])
+  @@index([bloodGroup, component])
+}
+
+// Donation camps organised by NGOs.
+model Camp {
+  id                String       @id @default(cuid())
+  orgId             String
+  title             String
+  venue             String
+  city              String
+  pincode           String
+  date              DateTime
+  startTime         String // "HH:mm" 24h format
+  endTime           String
+  description       String?
+  bloodGroupsNeeded BloodGroup[]
+
+  org User @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([city, date])
+}
+
+// Emergency requests raised by HOSPITAL users.
+model BloodRequest {
+  id          String        @id @default(cuid())
+  hospitalId  String
+  patientName String
+  bloodGroup  BloodGroup
+  component   Component
+  units       Int
+  urgency     Urgency
+  neededBy    DateTime
+  city        String
+  pincode     String
+  note        String?
+  status      RequestStatus @default(OPEN)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  hospital  User              @relation("HospitalRequests", fields: [hospitalId], references: [id], onDelete: Cascade)
+  responses RequestResponse[]
+
+  @@index([hospitalId])
+  @@index([status, bloodGroup, component])
+  @@index([city])
+  @@index([neededBy])
+}
+
+// A PLEDGED / DONATED / DECLINED response by a DONOR, NGO or BLOOD_BANK
+// on a request. One response per (request, responder) pair.
+model RequestResponse {
+  id          String         @id @default(cuid())
+  requestId   String
+  responderId String
+  status      ResponseStatus @default(PLEDGED)
+  message     String?
+  createdAt   DateTime       @default(now())
+
+  request   BloodRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  responder User         @relation(fields: [responderId], references: [id], onDelete: Cascade)
+
+  @@unique([requestId, responderId])
+  @@index([responderId])
+}
