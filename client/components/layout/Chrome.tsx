@@ -112,11 +112,20 @@ function initials(name: string): string {
     .join("");
 }
 
+/** Short pause so login/logout transitions register without feeling like buffering. */
+const REDIRECT_DELAY_MS = 300;
+const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
 export function AppHeader() {
   const { user, refresh } = useMe();
   const router = useRouter();
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const logout = async () => {
+    setLoggingOut(true);
+    // A short beat with the button in its loading state — an instant
+    // sign-out reads as if the click did nothing.
+    await wait(REDIRECT_DELAY_MS);
     await api("/auth/logout", { method: "POST" }).catch(() => undefined);
     // Clear the cached session (revalidation now returns 401) BEFORE
     // navigating — otherwise pages still see the stale signed-in user and
@@ -158,7 +167,13 @@ export function AppHeader() {
                   </span>
                 </span>
               </Link>
-              <Button variant="secondary" size="sm" onClick={logout} aria-label="Log out">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={logout}
+                loading={loggingOut}
+                aria-label="Log out"
+              >
                 <LogoutIcon className="h-4 w-4" />
                 Logout
               </Button>
@@ -220,7 +235,7 @@ export function MainNav() {
               key={item.href}
               href={item.href}
               aria-current={active ? "page" : undefined}
-              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-maroon-900 ${
+              className={`flex items-center gap-2 whitespace-nowrap px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-maroon-900 hover:no-underline ${
                 active ? "bg-maroon-900" : ""
               }`}
             >
@@ -229,8 +244,8 @@ export function MainNav() {
             </Link>
           );
         })}
-        <span className="ml-auto hidden items-center gap-1 text-2xs font-semibold text-white/80 xl:flex">
-          <ClockIcon className="h-3 w-3" />
+        <span className="ml-auto hidden items-center gap-1 pl-6 text-right text-2xs font-semibold text-white/80 xl:flex">
+          <ClockIcon className="h-3 w-3 shrink-0" />
           Every pledge is screened by the receiving hospital or blood bank
         </span>
       </div>
@@ -258,9 +273,9 @@ export function AppFooter() {
         <div>
           <p className="text-2xs font-bold uppercase tracking-widest text-white/70">Platform</p>
           <ul className="mt-3 space-y-2 text-sm">
-            <li><Link className="hover:underline" href="/dashboard">Live dashboard</Link></li>
-            <li><Link className="hover:underline" href="/requests">Emergency requests</Link></li>
-            <li><Link className="hover:underline" href="/camps">Donation camps</Link></li>
+            <li><Link className="text-black hover:underline" href="/dashboard">Live dashboard</Link></li>
+            <li><Link className="text-black hover:underline" href="/requests">Emergency requests</Link></li>
+            <li><Link className="text-black hover:underline" href="/camps">Donation camps</Link></li>
           </ul>
         </div>
         <div>

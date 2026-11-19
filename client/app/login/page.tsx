@@ -18,6 +18,10 @@ import { AlertTriangleIcon, InfoIcon, PersonIcon } from "@/components/ui/icons";
 
 const PENDING_CREDENTIAL_KEY = "bl.pendingGoogleCredential";
 
+/** Short pause after a successful sign-in so the transition doesn't snap. */
+const REDIRECT_DELAY_MS = 300;
+const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
 /** Seeded demo accounts for the dev quick-login panel (server must be in development mode). */
 const DEMO_ACCOUNTS: Array<{ email: string; label: string; role: Role }> = [
   { email: "ananya.sharma@bloodlink.test", label: "Ananya Sharma", role: "DONOR" },
@@ -77,6 +81,7 @@ function LoginInner() {
       setUseGoogle(false);
       try {
         await api<{ user: ApiUser }>("/auth/google", { method: "POST", body: { credential } });
+        await wait(REDIRECT_DELAY_MS);
         await refresh();
         router.replace(next || roleHome(undefined));
       } catch (e) {
@@ -107,6 +112,9 @@ function LoginInner() {
         method: "POST",
         body: { email: values.email.trim().toLowerCase(), password: values.password },
       });
+      // Pause while the button still shows its loading state — navigating the
+      // instant the API returns reads as if the click did nothing.
+      await wait(REDIRECT_DELAY_MS);
       // Navigate as soon as the session cache is refreshed — no extra render cycle.
       await refresh();
       router.replace(next || roleHome(undefined));
@@ -132,6 +140,7 @@ function LoginInner() {
     setUseGoogle(false);
     try {
       await api<{ user: ApiUser }>("/auth/dev", { method: "POST", body: { email } });
+      await wait(REDIRECT_DELAY_MS);
       await refresh();
       router.replace("/dashboard");
     } catch (e) {
