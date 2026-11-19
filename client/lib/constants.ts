@@ -58,11 +58,27 @@ export const GENDERS: Array<{ value: "MALE" | "FEMALE" | "OTHER"; label: string 
   { value: "OTHER", label: "Other" },
 ];
 
-/** Tile status strip metadata — icon + text so colour is never the only cue. */
-export const LEVEL_META: Record<Level, { label: string; strip: string; text: string; dot: string }> = {
-  GREEN: { label: "Plenty", strip: "bg-success", text: "text-success", dot: "bg-success" },
-  AMBER: { label: "Low", strip: "bg-warning", text: "text-[#8a6d00]", dot: "bg-warning" },
-  RED: { label: "None", strip: "bg-danger", text: "text-danger", dot: "bg-danger" },
+/**
+ * Tile status metadata — icon + text so colour is never the only cue.
+ * `chip` is a tinted pill (dark text on light tint, AA-safe); `bar` colours
+ * the slim supply meter along the tile's bottom edge.
+ */
+export const LEVEL_META: Record<Level, { label: string; chip: string; bar: string }> = {
+  GREEN: {
+    label: "Plenty",
+    chip: "bg-[#EAF5EB] text-success border border-[#CBE5CD]",
+    bar: "bg-success",
+  },
+  AMBER: {
+    label: "Low",
+    chip: "bg-[#FFF7E0] text-[#8a6d00] border border-[#F5E6B8]",
+    bar: "bg-warning",
+  },
+  RED: {
+    label: "None",
+    chip: "bg-primary-50 text-danger border border-primary-100",
+    bar: "bg-danger",
+  },
 };
 
 export const ROLE_META: Record<Role, { label: string; home: string }> = {
