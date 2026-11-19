@@ -89,6 +89,7 @@ Status legend: ✅ implemented & tested.
 - **FR-B3** ✅ Rare-donor banner (available + eligible donors in negative groups), respecting the city filter.
 - **FR-B4** ✅ Emergency request feed (urgency badge, units, component, hospital, city, countdown, "I can donate") and upcoming-camps strip on the dashboard.
 - **FR-B5** ✅ Auto-refresh every 20 s with a visible "Updated Xs ago" indicator (SWR polling; no websockets). The dashboard is a **signed-in** surface — the public home page describes the product and links to it.
+- **FR-B6** ✅ **District-wise availability search** (public `/availability`): filters for district (all 31 Karnataka districts, "All Districts" default), blood group and component (Whole blood / PRBC / Platelets / Plasma-FFP); results list each inventory row with institution name, district + address (derived from the institution's registration), units and last-updated timestamp. Filtering happens in the database; registered inventory is explicitly not presented as real-time availability.
 
 ## 6. Privacy requirements (non-negotiable)
 

@@ -237,6 +237,13 @@ level }` where level = **RED** (0 supply) / **AMBER** (1–4) / **GREEN** (5+), 
 (donors + units) — demand never makes supply look plentiful. Other components default to
 `WHOLE_BLOOD`.
 
+**Districts & availability** — `GET /districts[?state=]`: district master (31 Karnataka
+districts, public). `GET /availability?districtId=&bloodGroup=&component=`: public stock search —
+filtering happens in the database, each result is one inventory row (institution name, district
+**derived from the institution's registration**, address, group, component, units, last-updated).
+Components: `WHOLE_BLOOD`, `PRBC`, `PLATELETS`, `FFP`. Registered inventory is reported as-is
+with timestamps — never a real-time guarantee.
+
 **Admin** — `PATCH /admin/orgs/:userId/verify` `{ isVerified }` (ADMIN only).
 
 ## Design & theme rationale
@@ -286,8 +293,13 @@ flashy consumer app:
   90 days ago; UI shows "Eligible from \<date\>" otherwise. Only available **and** eligible donors
   count on the dashboard and appear in hospital search.
 - **Compatibility** (whole blood): O−→O− · O+→O+,O− · A−→A−,O− · A+→A+,A−,O+,O− · B−→B−,O− ·
-  B+→B+,B−,O+,O− · AB−→AB−,A−,B−,O− · AB+→everyone. Platelets/plasma: exact group only. The
+  B+→B+,B−,O+,O− · AB−→AB−,A−,B−,O− · AB+→everyone. PRBC/platelets/FFP: exact group only. The
   request detail page shows compatible groups as chips.
+- **Locations**: a `District` master table (31 Karnataka districts, seeded from
+  `server/src/data/karnataka.ts`) backs every district dropdown via `GET /api/districts`.
+  Hospitals, blood banks and NGOs carry a validated `districtId` (nullable — records outside
+  supported states stay "unknown", never guessed); stock rows derive their district from the
+  holding institution. Supporting a new state = seed more districts, nothing else changes.
 - Dashboard levels: RED = 0 total supply, AMBER = 1–4, GREEN = 5+ (supply = donors + units).
 - Roles are chosen once at onboarding and never changed afterwards; ADMIN is a seeded role only.
 
