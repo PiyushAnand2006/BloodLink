@@ -44,7 +44,7 @@ const config: Config = {
         muted: "#616161",
       },
       fontFamily: {
-        sans: ["var(--font-inter)", "ui-sans-serif", "system-ui", "Segoe UI", "Arial", "sans-serif"],
+        sans: ["Inter", "ui-sans-serif", "system-ui", "Segoe UI", "Arial", "sans-serif"],
       },
       borderRadius: {
         DEFAULT: "6px",
