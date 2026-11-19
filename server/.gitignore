@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.env
+.env.local
+*.log
+*.tsbuildinfo
+# project-local PostgreSQL data directory (npm run db:start)
+.pgdata/
