@@ -1,0 +1,21 @@
+# dependencies
+node_modules/
+
+# builds
+dist/
+.next/
+out/
+
+# env files (real credentials never enter the repo)
+.env
+.env.local
+.env.*.local
+
+# project-local dev database data directory
+.pgdata/
+
+# misc
+*.log
+.DS_Store
+*.tsbuildinfo
+.mimosa/
