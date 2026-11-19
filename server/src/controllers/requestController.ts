@@ -36,7 +36,13 @@ const hospitalInclude = {
       phone: true,
       city: true,
       pincode: true,
-      orgProfile: { select: { orgName: true, contactPerson: true } },
+      orgProfile: {
+        select: {
+          orgName: true,
+          contactPerson: true,
+          district: { select: { name: true } },
+        },
+      },
     },
   },
 } as const;
@@ -61,7 +67,11 @@ interface RequestRow {
     phone: string | null;
     city: string | null;
     pincode: string | null;
-    orgProfile: { orgName: string; contactPerson: string } | null;
+    orgProfile: {
+      orgName: string;
+      contactPerson: string;
+      district: { name: string } | null;
+    } | null;
   };
 }
 
@@ -78,6 +88,7 @@ function toPublicRequest(
       orgName: hospital.orgProfile?.orgName ?? hospital.name,
       city: hospital.city,
       contactPerson: hospital.orgProfile?.contactPerson ?? null,
+      district: hospital.orgProfile?.district?.name ?? null,
     },
     hospitalPhone: canSeeHospitalPhone(user, row) ? hospital.phone : null,
     ...extra,

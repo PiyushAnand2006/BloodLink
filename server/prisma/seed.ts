@@ -33,6 +33,7 @@ import {
   ResponseStatus,
   Role,
 } from "@prisma/client";
+import { KARNATAKA_DISTRICTS, KARNATAKA_STATE } from "../src/data/karnataka.js";
 
 const prisma = new PrismaClient();
 
@@ -59,6 +60,25 @@ async function main() {
     );
   }
   const passwordHash = await bcrypt.hash(demoPassword, 10);
+
+  /* ------------------------------------------------- district master */
+  // Karnataka (31 districts). Organisations outside supported states keep
+  // districtId = null — locations are never invented for them.
+  await prisma.district.createMany({
+    data: KARNATAKA_DISTRICTS.map((name) => ({ state: KARNATAKA_STATE, name })),
+    skipDuplicates: true,
+  });
+  const districtRows = await prisma.district.findMany({
+    where: { state: KARNATAKA_STATE },
+    select: { id: true, name: true },
+  });
+  const districtId = (name: string): string => {
+    const row = districtRows.find((d) => d.name === name);
+    if (!row) throw new Error(`District missing from master data: ${name}`);
+    return row.id;
+  };
+  const BENGALURU_URBAN = districtId("Bengaluru Urban");
+  const MYSURU = districtId("Mysuru");
 
   /* ------------------------------------------------------ reset tables */
   await prisma.requestResponse.deleteMany();
@@ -103,6 +123,7 @@ async function main() {
           regNo: "KA-HOS-2001-0117",
           address: "154/11, Bannerghatta Road, Opp. IIM, Bengaluru",
           contactPerson: "Dr. Ramesh Iyer",
+          districtId: BENGALURU_URBAN,
           isVerified: true,
         },
       },
@@ -126,6 +147,7 @@ async function main() {
           regNo: "KA-HOS-2004-0382",
           address: "Jayadeva Marg, Nazarbad Mohalla, Mysuru",
           contactPerson: "Dr. Meera Rao",
+          districtId: MYSURU,
           isVerified: true,
         },
       },
@@ -149,6 +171,9 @@ async function main() {
           regNo: "TS-HOS-1956-0021",
           address: "Afzal Gunj, Near Nayapul, Hyderabad",
           contactPerson: "Dr. Arvind Kumar",
+          // Hyderabad is outside the Karnataka-only district scope —
+          // location stays explicitly unknown (never invented).
+          districtId: null,
           isVerified: true,
         },
       },
@@ -173,6 +198,7 @@ async function main() {
           regNo: "NGO-KA-2015-0231",
           address: "No. 42, 12th Main, Indiranagar, Bengaluru",
           contactPerson: "Anitha Desai",
+          districtId: BENGALURU_URBAN,
           isVerified: true,
         },
       },
@@ -196,6 +222,8 @@ async function main() {
           regNo: "NGO-TS-2019-1177",
           address: "3-4-101, Nampally Station Road, Hyderabad",
           contactPerson: "Suresh Babu",
+          // Hyderabad — outside the Karnataka-only district scope: null.
+          districtId: null,
           isVerified: false, // pending admin verification — demo for PATCH /admin/orgs/:userId/verify
         },
       },
@@ -220,6 +248,7 @@ async function main() {
           regNo: "BB-KA-2012-0045",
           address: "Red Cross Bhavan, Museum Road, Bengaluru",
           contactPerson: "Mr. Girish Rao",
+          districtId: BENGALURU_URBAN,
           isVerified: true,
         },
       },
@@ -243,6 +272,7 @@ async function main() {
           regNo: "BB-KA-2016-0092",
           address: "Vani Vilas Road, Krishnamurthypuram, Mysuru",
           contactPerson: "Mr. Prakash Jain",
+          districtId: MYSURU,
           isVerified: true,
         },
       },
@@ -339,7 +369,9 @@ async function main() {
         [BloodGroup.A_POS, Component.PLATELETS, 4],
         [BloodGroup.O_POS, Component.PLATELETS, 5],
         [BloodGroup.AB_NEG, Component.PLATELETS, 0], // zero units => RED tile
-        [BloodGroup.O_POS, Component.PLASMA, 8],
+        [BloodGroup.A_POS, Component.PRBC, 6],
+        [BloodGroup.O_POS, Component.PRBC, 7],
+        [BloodGroup.O_POS, Component.FFP, 8],
       ],
     },
     {
@@ -354,7 +386,8 @@ async function main() {
         [BloodGroup.O_POS, Component.WHOLE_BLOOD, 11],
         [BloodGroup.O_NEG, Component.WHOLE_BLOOD, 1],
         [BloodGroup.B_POS, Component.PLATELETS, 2],
-        [BloodGroup.O_NEG, Component.PLASMA, 3],
+        [BloodGroup.O_POS, Component.PRBC, 3],
+        [BloodGroup.O_NEG, Component.FFP, 3],
       ],
     },
     {
@@ -374,7 +407,7 @@ async function main() {
         [BloodGroup.A_POS, Component.WHOLE_BLOOD, 2],
         [BloodGroup.B_NEG, Component.WHOLE_BLOOD, 1],
         [BloodGroup.AB_POS, Component.WHOLE_BLOOD, 1],
-        [BloodGroup.A_POS, Component.PLASMA, 4],
+        [BloodGroup.A_POS, Component.FFP, 4],
       ],
     },
   ];
@@ -475,7 +508,7 @@ async function main() {
       hospitalId: osmania.id,
       patientName: "Lata Suresh",
       bloodGroup: BloodGroup.A_NEG,
-      component: Component.PLASMA,
+      component: Component.FFP,
       units: 2,
       urgency: Urgency.NORMAL,
       neededBy: hoursFromNow(72),
@@ -580,6 +613,7 @@ async function main() {
         title: "Koramangala Winter Blood Donation Drive",
         venue: "Community Hall, 5th Block, Koramangala",
         city: "Bengaluru",
+        districtId: BENGALURU_URBAN,
         pincode: "560034",
         date: daysFromNow(7),
         startTime: "09:00",
@@ -593,6 +627,7 @@ async function main() {
         title: "ITPL Tech Park Donation Camp",
         venue: "Prestige Tech Park Auditorium, Kadugodi, Whitefield",
         city: "Bengaluru",
+        districtId: BENGALURU_URBAN,
         pincode: "560067",
         date: daysFromNow(14),
         startTime: "10:00",
@@ -606,6 +641,7 @@ async function main() {
         title: "Nampally Community Donation Camp",
         venue: "Urdu Hall Grounds, Nampally",
         city: "Hyderabad",
+        districtId: null, // venue outside the Karnataka-only district scope
         pincode: "500001",
         date: daysFromNow(10),
         startTime: "09:30",

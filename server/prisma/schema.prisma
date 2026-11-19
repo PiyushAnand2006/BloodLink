@@ -31,8 +31,9 @@ enum BloodGroup {
 
 enum Component {
   WHOLE_BLOOD
+  PRBC
   PLATELETS
-  PLASMA
+  FFP
 }
 
 enum Urgency {
@@ -100,15 +101,30 @@ model DonorProfile {
   @@index([isRare])
 }
 
+// Master list of districts (Karnataka for now — add rows per state to extend).
+model District {
+  id          String       @id @default(cuid())
+  state       String
+  name        String
+  orgProfiles OrgProfile[]
+  camps       Camp[]
+
+  @@unique([state, name])
+}
+
 // One-to-one extension for NGO, BLOOD_BANK and HOSPITAL users.
 model OrgProfile {
-  userId        String  @id
+  userId        String    @id
   orgName       String
   regNo         String
   address       String
   contactPerson String
-  isVerified    Boolean @default(false) // admin can flip via PATCH /admin/orgs/:userId/verify
-  user          User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Registered district — null means "unknown / outside supported states";
+  // never guessed from address text.
+  districtId    String?
+  district      District? @relation(fields: [districtId], references: [id])
+  isVerified    Boolean   @default(false) // admin can flip via PATCH /admin/orgs/:userId/verify
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // Live stock rows held by NGO and BLOOD_BANK organisations.
@@ -133,6 +149,8 @@ model Camp {
   title             String
   venue             String
   city              String
+  districtId        String? // venue district — null when unknown / outside supported states
+  district          District?    @relation(fields: [districtId], references: [id])
   pincode           String
   date              DateTime
   startTime         String // "HH:mm" 24h format
@@ -143,6 +161,7 @@ model Camp {
   org User @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
   @@index([city, date])
+  @@index([districtId])
 }
 
 // Emergency requests raised by HOSPITAL users.

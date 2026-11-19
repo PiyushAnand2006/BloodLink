@@ -328,10 +328,10 @@ async function run() {
   console.log("\n— Stock");
   r = await call("/stock/mine", { token: tokens.rakta });
   check("GET /stock/mine lists NGO stock (5 rows)", r.data?.stock?.length === 5, String(r.data?.stock?.length));
-  r = await call("/stock", { method: "POST", token: tokens.rakta, body: { bloodGroup: "A_NEG", component: "PLASMA", units: 3 } });
+  r = await call("/stock", { method: "POST", token: tokens.rakta, body: { bloodGroup: "A_NEG", component: "FFP", units: 3 } });
   check("POST /stock creates row", r.status === 201 && r.data?.stock?.units === 3);
   const stockId = r.data?.stock?.id;
-  r = await call("/stock", { method: "POST", token: tokens.rakta, body: { bloodGroup: "A_NEG", component: "PLASMA", units: 5 } });
+  r = await call("/stock", { method: "POST", token: tokens.rakta, body: { bloodGroup: "A_NEG", component: "FFP", units: 5 } });
   check("duplicate stock row → 409", r.status === 409);
   r = await call(`/stock/${stockId}`, { method: "PUT", token: tokens.rakta, body: { units: 7 } });
   check("PUT /stock/:id updates units (owner)", r.data?.stock?.units === 7);
@@ -344,10 +344,45 @@ async function run() {
   r = await call(`/stock/${stockId}`, { method: "DELETE", token: tokens.rakta });
   check("double delete → 404", r.status === 404);
 
+  /* ============================== Districts & availability ============================== */
+  console.log("\n— Districts & availability");
+  r = await call("/districts");
+  check("GET /districts returns all 31 Karnataka districts", r.status === 200 && r.data?.total === 31, String(r.data?.total));
+  const districtsByName = Object.fromEntries(
+    (r.data?.districts ?? []).map((d) => [d.name, d.id]),
+  );
+  const mysuruId = districtsByName["Mysuru"];
+  check("district master includes Mysuru and Bengaluru Urban", Boolean(mysuruId) && Boolean(districtsByName["Bengaluru Urban"]));
+
+  r = await call("/availability");
+  check("availability lists all stock rows unfiltered", r.status === 200 && r.data?.total === 35, String(r.data?.total));
+  check(
+    "rows expose institution district, address and last-updated",
+    (r.data?.results ?? []).every((x) => "district" in x && "address" in x && "updatedAt" in x),
+  );
+  const unknownDistrictRows = (r.data?.results ?? []).filter((x) => x.district === null);
+  check("rows outside Karnataka keep district unknown (never invented)", unknownDistrictRows.length === 5, String(unknownDistrictRows.length));
+
+  r = await call(`/availability?districtId=${mysuruId}`);
+  check("district filter returns only that district's rows", (r.data?.results ?? []).length > 0 && r.data.results.every((x) => x.district === "Mysuru"));
+
+  r = await call(`/availability?districtId=${mysuruId}&bloodGroup=O_POS&component=PRBC`);
+  check(
+    "district + group + component filters combine",
+    r.data?.results?.length === 1 && r.data.results[0].units === 3 && r.data.results[0].orgName.includes("Lions"),
+    JSON.stringify(r.data?.results),
+  );
+
+  r = await call("/availability?bloodGroup=AB_NEG&component=FFP");
+  check("group + component combination with no matches → empty", r.status === 200 && r.data?.total === 0);
+
+  r = await call("/availability?districtId=nonexistent123");
+  check("unknown district id → empty results, never guessed", r.status === 200 && r.data?.total === 0);
+
   /* ============================== Camps ============================== */
   console.log("\n— Camps");
   const tomorrow = new Date(Date.now() + 2 * DAY).toISOString().slice(0, 10);
-  r = await call("/camps", { method: "POST", token: tokens.rakta, body: { title: "Test Camp", venue: "Test Venue", city: "Bengaluru", pincode: "560001", date: tomorrow, startTime: "09:00", endTime: "13:00", description: "d", bloodGroupsNeeded: ["O_POS", "A_NEG"] } });
+  r = await call("/camps", { method: "POST", token: tokens.rakta, body: { title: "Test Camp", venue: "Test Venue", city: "Bengaluru", districtId: districtsByName["Bengaluru Urban"], pincode: "560001", date: tomorrow, startTime: "09:00", endTime: "13:00", description: "d", bloodGroupsNeeded: ["O_POS", "A_NEG"] } });
   check("NGO creates camp", r.status === 201);
   const campId = r.data?.camp?.id;
   r = await call("/camps", { method: "POST", token: tokens.redcross, body: { title: "Bad Camp", venue: "v", city: "Bengaluru", pincode: "560001", date: tomorrow, startTime: "09:00", endTime: "13:00", bloodGroupsNeeded: ["O_POS"] } });
@@ -360,6 +395,12 @@ async function run() {
   void r;
   r = await call(`/camps?mine=true`, { token: tokens.rakta });
   check("NGO mine=true lists own camps", r.data?.camps?.some?.((c) => c.id === campId));
+  r = await call(`/camps?districtId=${districtsByName["Bengaluru Urban"]}`);
+  check(
+    "camps district filter matches venue district",
+    (r.data?.camps ?? []).length >= 3 && r.data.camps.every((c) => c.districtName === "Bengaluru Urban"),
+    JSON.stringify(r.data?.camps?.map((c) => c.districtName)),
+  );
   r = await call(`/camps/${campId}`, { method: "DELETE", token: tokens.rakta });
   check("NGO deletes own camp", r.status === 200);
 

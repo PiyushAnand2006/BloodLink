@@ -108,6 +108,14 @@ export async function register(req: Request, res: Response): Promise<void> {
     );
   }
 
+  // Organisations register inside a supported district (Karnataka for now).
+  if (data.role !== "DONOR") {
+    const district = await prisma.district.findUnique({ where: { id: data.districtId } });
+    if (!district) {
+      throw new ApiError(400, "Unknown district — pick one from the list");
+    }
+  }
+
   const user = await prisma.user.create({
     data: {
       googleId: payload.sub,
@@ -138,6 +146,7 @@ export async function register(req: Request, res: Response): Promise<void> {
                 regNo: data.regNo,
                 address: data.address,
                 contactPerson: data.contactPerson,
+                districtId: data.districtId,
               },
             }
           : undefined,
@@ -161,6 +170,14 @@ export async function registerEmail(req: Request, res: Response): Promise<void> 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
     throw new ApiError(409, "An account with this email already exists — please sign in instead.");
+  }
+
+  // Organisations register inside a supported district (Karnataka for now).
+  if (data.role !== "DONOR") {
+    const district = await prisma.district.findUnique({ where: { id: data.districtId } });
+    if (!district) {
+      throw new ApiError(400, "Unknown district — pick one from the list");
+    }
   }
 
   const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
@@ -193,6 +210,7 @@ export async function registerEmail(req: Request, res: Response): Promise<void> 
                 regNo: data.regNo,
                 address: data.address,
                 contactPerson: data.contactPerson,
+                districtId: data.districtId,
               },
             }
           : undefined,

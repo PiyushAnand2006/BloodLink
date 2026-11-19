@@ -12,6 +12,12 @@ export const pincodeSchema = z
   .string()
   .regex(/^[1-9]\d{5}$/, "Must be a 6-digit Indian pincode");
 
+/** District ids (validated against the District table in controllers). */
+export const districtIdSchema = z
+  .string()
+  .trim()
+  .regex(/^[a-zA-Z0-9_-]{1,40}$/, "Invalid district");
+
 export const bloodGroupSchema = z.enum([
   "A_POS",
   "A_NEG",
@@ -23,7 +29,7 @@ export const bloodGroupSchema = z.enum([
   "O_NEG",
 ]);
 
-export const componentSchema = z.enum(["WHOLE_BLOOD", "PLATELETS", "PLASMA"]);
+export const componentSchema = z.enum(["WHOLE_BLOOD", "PRBC", "PLATELETS", "FFP"]);
 
 export const urgencySchema = z.enum(["CRITICAL", "URGENT", "NORMAL"]);
 
@@ -95,6 +101,9 @@ export const onboardingSchema = z.discriminatedUnion("role", [
     regNo: nameish(2, 60),
     address: nameish(4, 200),
     contactPerson: nameish(2, 80),
+    // Registered district — required for organisations at signup; the
+    // controller verifies the id exists in the District master table.
+    districtId: districtIdSchema,
   }),
 ]);
 
@@ -149,6 +158,7 @@ export const campCreateSchema = z
     title: nameish(3, 120),
     venue: nameish(3, 160),
     city: nameish(2, 80),
+    districtId: districtIdSchema.optional().nullable(),
     pincode: pincodeSchema,
     date: z.coerce.date(),
     startTime: z.string().regex(timeRegex, "Use 24h HH:mm"),

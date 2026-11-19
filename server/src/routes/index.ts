@@ -9,6 +9,7 @@ import requestRoutes from "./requestRoutes.js";
 import responseRoutes from "./responseRoutes.js";
 import dashboardRoutes from "./dashboardRoutes.js";
 import adminRoutes from "./adminRoutes.js";
+import locationRoutes from "./locationRoutes.js";
 
 const api = Router();
 
@@ -22,5 +23,6 @@ api.use("/requests", requestRoutes);
 api.use("/responses", responseRoutes);
 api.use("/dashboard", dashboardRoutes);
 api.use("/admin", adminRoutes);
+api.use("/", locationRoutes); // /districts + /availability (public)
 
 export default api;

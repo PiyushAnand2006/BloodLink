@@ -3,6 +3,7 @@ import { ApiError } from "../middleware/errors.js";
 import {
   bloodGroupSchema,
   componentSchema,
+  districtIdSchema,
   requestStatusSchema,
   urgencySchema,
 } from "./index.js";
@@ -21,6 +22,12 @@ const cityish = z.string().trim().min(2).max(80).optional();
 
 export const dashboardQuerySchema = z.object({
   city: cityish,
+  component: componentSchema.optional(),
+});
+
+export const availabilityQuerySchema = z.object({
+  districtId: districtIdSchema.optional(),
+  bloodGroup: bloodGroupSchema.optional(),
   component: componentSchema.optional(),
 });
 
@@ -49,6 +56,7 @@ export const donorsQuerySchema = z.object({
 
 export const campsQuerySchema = z.object({
   city: cityish,
+  districtId: districtIdSchema.optional(),
   date: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD")
