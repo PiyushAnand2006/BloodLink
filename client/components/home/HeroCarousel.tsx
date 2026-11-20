@@ -57,7 +57,7 @@ function Chevron({ direction }: { direction: "left" | "right" }) {
       strokeWidth={2.5}
       strokeLinecap="round"
       strokeLinejoin="round"
-      className="h-5 w-5"
+      className="h-4 w-4"
       aria-hidden
     >
       {direction === "left" ? <path d="m15 6-6 6 6 6" /> : <path d="m9 6 6 6-6 6" />}
@@ -79,7 +79,9 @@ export function HeroCarousel() {
   useEffect(() => {
     const t = setInterval(next, 6000);
     return () => clearInterval(t);
-  }, [next]);
+    // `index` in the deps restarts the timer on every slide change — manual
+    // or auto — so a click always gets a full 6s before the next auto-advance.
+  }, [next, index]);
 
   const slide = SLIDES[index];
 
@@ -166,27 +168,26 @@ export function HeroCarousel() {
             className="animate-fadein relative z-10 aspect-[4/3] w-full max-w-lg rounded-lg object-cover shadow-pop"
             loading="eager"
           />
+          {/* Prev / next — centred, just below the photo's bottom edge */}
+          <div className="absolute -bottom-10 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2">
+            <button
+              type="button"
+              onClick={prev}
+              aria-label="Previous highlight"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-navy shadow-card hover:bg-white"
+            >
+              <Chevron direction="left" />
+            </button>
+            <button
+              type="button"
+              onClick={next}
+              aria-label="Next highlight"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-navy shadow-card hover:bg-white"
+            >
+              <Chevron direction="right" />
+            </button>
+          </div>
         </div>
-      </div>
-
-      {/* Prev / next */}
-      <div className="absolute right-4 top-1/2 hidden -translate-y-1/2 items-center gap-2 lg:flex">
-        <button
-          type="button"
-          onClick={prev}
-          aria-label="Previous highlight"
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-white/80 text-navy shadow-card hover:bg-white"
-        >
-          <Chevron direction="left" />
-        </button>
-        <button
-          type="button"
-          onClick={next}
-          aria-label="Next highlight"
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-white/80 text-navy shadow-card hover:bg-white"
-        >
-          <Chevron direction="right" />
-        </button>
       </div>
 
       {/* Dots */}

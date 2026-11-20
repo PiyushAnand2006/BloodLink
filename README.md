@@ -72,6 +72,21 @@ bloodlink/
 
 ## Quick start (local)
 
+### One-click startup on Windows
+
+From the repository root, double-click [`run.bat`](./run.bat). It starts the
+project-local PostgreSQL database, launches the API and client when they are not
+already running, waits for both services to respond, and opens
+<http://localhost:3000>.
+
+The equivalent PowerShell command is:
+
+```powershell
+.\run.ps1
+```
+
+### Manual startup
+
 ```bash
 # 1. API + database
 cd server
